@@ -1,22 +1,22 @@
 # Security Audit
 
-## Controls implemented
+## Implemented controls
 - Password hashing with bcryptjs
-- Server-managed JWT session cookies with HttpOnly, SameSite, secure option in production
-- Validation using Zod for auth and onboarding inputs
-- Prisma ORM with safe query patterns
-- Rate limiting should be added for production deployment
-- Security headers enabled via Next.js config
-- Basic authorization checks on protected routes
+- Secure session cookies using HTTP-only and SameSite settings
+- Server-side validation for auth and onboarding values
+- Prisma ORM to avoid raw SQL concatenation
+- Security headers configured in Next.js config
+- Protected routes redirect unauthenticated users to login
 
-## Remaining risks
-- OAuth providers are not yet configured
-- Real production deployment should use PostgreSQL and a managed secret store
-- File upload validation is not yet implemented beyond the basic app scaffold
+## Remaining production risks
+- OAuth providers not yet connected
+- File upload validation and public image sanitization should be added before public deployment
+- Real production should use PostgreSQL and a managed secret store
+- Rate limiting and abuse prevention should be added for public traffic
 
-## Recommended production configuration
-- HTTPS everywhere
-- Strong environment secrets
-- Postgres database
-- Monitoring and dependency scanning
-- Branch protection and GitHub security features
+## Recommended deployment
+- HTTPS only
+- Strong env secrets for JWT and database config
+- Postgres instead of SQLite for production
+- Dependabot + GitHub security scanning
+- CI checks for linting, tests, and build validation

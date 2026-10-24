@@ -7,48 +7,60 @@ export default async function SignupPage() {
   if (user) redirect('/dashboard');
 
   return (
-    <main className="container">
-      <header className="topbar">
-        <div className="brand"><span className="brand-badge">P</span>Physiq</div>
-        <nav className="nav">
-          <Link href="/">Home</Link>
-          <Link href="/login">Login</Link>
-        </nav>
-      </header>
+    <main className="page-shell">
+      <div className="container auth-wrap">
+        <header className="topbar">
+          <div className="brand">
+            <span className="brand-mark">P</span>
+            <span>Physiq</span>
+          </div>
 
-      <section className="hero" style={{ gridTemplateColumns: '1fr' }}>
-        <div className="auth-shell" style={{ maxWidth: 620, margin: '0 auto' }}>
-          <div className="auth-card">
-            <div className="auth-header">
+          <nav className="nav">
+            <Link href="/">Home</Link>
+            <Link href="/login">Login</Link>
+          </nav>
+        </header>
+
+        <section className="auth-card-main">
+          <div className="card-panel auth-panel wide">
+            <div className="panel-header">
               <h3>Create account</h3>
-              <span className="muted">Free and secure</span>
+              <span className="pill soft">Free • secure</span>
             </div>
-            <form action="/api/auth/register" method="post" className="form-grid">
+
+            <form action="/api/auth/register" method="post" className="form-grid two-up">
               <div className="field">
                 <label htmlFor="name">Full name</label>
                 <input id="name" name="name" placeholder="Your name" required />
               </div>
+
               <div className="field">
                 <label htmlFor="username">Username</label>
                 <input id="username" name="username" placeholder="myfitnessjourney" required />
               </div>
+
               <div className="field">
                 <label htmlFor="email">Email</label>
                 <input id="email" name="email" type="email" placeholder="you@example.com" required />
               </div>
+
               <div className="field">
                 <label htmlFor="password">Password</label>
                 <input id="password" name="password" type="password" placeholder="Min 8 characters" required />
               </div>
-              <button className="btn btn-primary" type="submit">Create account</button>
+
+              <div className="span-2">
+                <button className="btn btn-primary btn-full" type="submit">Create account</button>
+              </div>
             </form>
-            <div className="actions" style={{ marginTop: 18 }}>
+
+            <div className="helper-row">
               <span>Already have an account?</span>
               <Link href="/login">Log in</Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

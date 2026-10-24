@@ -1,13 +1,12 @@
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
-import { loginSchema, getSessionUser, setSessionCookie, createSessionToken } from '@/lib/auth';
+import { loginSchema, createSessionToken, getSessionUser, setSessionCookie } from '@/lib/auth';
 
 export async function POST(request: Request) {
-  const sessionUser = await getSessionUser();
-  if (sessionUser) {
-    return NextResponse.json({ error: 'Already authenticated.' }, { status: 400 });
+  const existingUser = await getSessionUser();
+  if (existingUser) {
+    return NextResponse.redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
   const formData = await request.formData();
@@ -15,28 +14,23 @@ export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid login credentials.' }, { status: 400 });
+    return NextResponse.redirect(new URL('/login?error=invalid', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
   const { email, password } = parsed.data;
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
-    return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    return NextResponse.redirect(new URL('/login?error=invalid', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) {
-    return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) {
+    return NextResponse.redirect(new URL('/login?error=invalid', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
-  const token = await createSessionToken({
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    name: user.name,
-  });
-
+  const token = await createSessionToken({ id: user.id, name: user.name, username: user.username, email: user.email });
   await setSessionCookie(token);
-  return NextResponse.json({ ok: true, user: { id: user.id, name: user.name, username: user.username, email: user.email } });
+
+  return NextResponse.redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
 }

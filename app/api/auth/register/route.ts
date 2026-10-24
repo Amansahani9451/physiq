@@ -1,34 +1,33 @@
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
-import { signupSchema, unauthorizedResponse } from '@/lib/auth';
-import { getSessionUser, setSessionCookie, createSessionToken } from '@/lib/auth';
+import { signupSchema, createSessionToken, getSessionUser, setSessionCookie } from '@/lib/auth';
 
 export async function POST(request: Request) {
-  const sessionUser = await getSessionUser();
-  if (sessionUser) return NextResponse.json({ error: 'Already authenticated.' }, { status: 400 });
+  const existingUser = await getSessionUser();
+  if (existingUser) {
+    return NextResponse.redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
+  }
 
   const formData = await request.formData();
   const payload = Object.fromEntries(formData.entries());
-
   const parsed = signupSchema.safeParse(payload);
+
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid signup details.' }, { status: 400 });
+    return NextResponse.redirect(new URL('/signup?error=invalid', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
   const { name, username, email, password } = parsed.data;
 
-  const exists = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username }] }
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email }, { username }] },
   });
 
-  if (exists) {
-    return NextResponse.json({ error: 'User already exists.' }, { status: 409 });
+  if (existing) {
+    return NextResponse.redirect(new URL('/signup?error=exists', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-
   const user = await prisma.user.create({
     data: {
       name,
@@ -37,21 +36,20 @@ export async function POST(request: Request) {
       passwordHash,
       profile: {
         create: {
-          bio: 'New to Physiq and building better habits.',
+          bio: 'New to Physiq and building consistent habits.',
           fitnessSetup: 'HOME',
           fitnessGoal: 'GENERAL',
           trainingDays: 3,
           experience: 'BEGINNER',
-          equipment: 'Bodyweight and basic accessories',
-          scheduleType: 'WORKING'
-        }
-      }
-    }
+          equipment: 'Bodyweight + basic equipment',
+          scheduleType: 'WORKING',
+        },
+      },
+    },
   });
 
-  const authUser = { id: user.id, email: user.email, username: user.username, name: user.name };
-  const token = await createSessionToken(authUser);
+  const token = await createSessionToken({ id: user.id, name: user.name, username: user.username, email: user.email });
   await setSessionCookie(token);
 
-  return NextResponse.json({ ok: true, user: authUser });
+  return NextResponse.redirect(new URL('/onboarding', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
 }

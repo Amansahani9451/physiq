@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Physiq',
-  description: 'A social fitness and routine-planning platform.'
+  description: 'Social fitness and routine planning for everyday consistency.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

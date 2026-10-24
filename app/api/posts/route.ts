@@ -1,44 +1,40 @@
-export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getSessionUser, unauthorizedResponse } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-
-const postSchema = z.object({
-  caption: z.string().trim().min(1).max(220),
-  imageUrl: z.string().optional().nullable()
-});
-
-export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return unauthorizedResponse();
-
-  const posts = await prisma.post.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { user: true, likes: true, comments: { include: { user: true } } }
-  });
-
-  return NextResponse.json({ posts });
-}
+import { getSessionUser } from '@/lib/auth';
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
-  if (!user) return unauthorizedResponse();
-
-  const body = await request.json();
-  const parsed = postSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid post data.' }, { status: 400 });
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
   }
 
-  const post = await prisma.post.create({
-    data: {
-      caption: parsed.data.caption,
-      imageUrl: parsed.data.imageUrl || null,
-      userId: user.id,
+  const formData = await request.formData();
+  const payload = Object.fromEntries(formData.entries());
+
+  await prisma.profile.upsert({
+    where: { userId: user.id },
+    update: {
+      fitnessSetup: String(payload.fitnessSetup || 'HOME'),
+      fitnessGoal: String(payload.fitnessGoal || 'GENERAL'),
+      trainingDays: Number(payload.trainingDays || 3),
+      experience: String(payload.experience || 'BEGINNER'),
+      equipment: String(payload.equipment || 'Bodyweight'),
+      scheduleType: String(payload.scheduleType || 'WORKING'),
+      schoolTiming: String(payload.schoolTiming || '08:00 AM - 02:00 PM'),
+      bio: String(payload.bio || ''),
     },
-    include: { user: true, likes: true, comments: true }
+    create: {
+      userId: user.id,
+      fitnessSetup: String(payload.fitnessSetup || 'HOME'),
+      fitnessGoal: String(payload.fitnessGoal || 'GENERAL'),
+      trainingDays: Number(payload.trainingDays || 3),
+      experience: String(payload.experience || 'BEGINNER'),
+      equipment: String(payload.equipment || 'Bodyweight'),
+      scheduleType: String(payload.scheduleType || 'WORKING'),
+      schoolTiming: String(payload.schoolTiming || '08:00 AM - 02:00 PM'),
+      bio: String(payload.bio || ''),
+    },
   });
 
-  return NextResponse.json({ ok: true, post });
+  return NextResponse.redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
 }
